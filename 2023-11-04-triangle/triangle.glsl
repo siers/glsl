@@ -12,25 +12,33 @@
 // * if it's negative, then area was negative, which is why cross product has handedness, which we exploit
 // then check that all cross products are positive, so they're on the same side of all sides
 
+// 3. https://codeplea.com/triangular-interpolation
+// superficially similar to formula in 1., but arrived from solving a linear system
 
 // clamp(gamma(cross.z))
 float f(vec2 a, vec2 b) {
   float area = cross(vec3(a, 0.), vec3(b, 0.)).z;
-  float gamma = pow(area, 1./2.2);
+  float gamma = area; // pow(area, 2.2);
   return clamp(gamma, 0., 1.);
 }
 
-vec3 sdTriangle(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 p)
-{
+vec3 crossProductTriangle(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 p) {
   vec2 e1 = p2 - p1;  vec2 e2 = p3 - p2;  vec2 e3 = p1 - p3;
   vec2 v1 = p - p1;   vec2 v2 = p - p2;   vec2 v3 = p - p3;
 
   return vec3(f(v1, e1), f(v2, e2), f(v3, e3));
 }
 
+vec3 barycentric(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 p) {
+  float w1 = ((p2.y-p3.y)*(p.x-p3.x)+(p3.x-p2.x)*(p.y-p3.y)) / ((p2.y-p3.y)*(p1.x-p3.x)+(p3.x-p2.x)*(p1.y-p3.y));
+  float w2 = ((p3.y-p1.y)*(p.x-p3.x)+(p1.x-p3.x)*(p.y-p3.y)) / ((p2.y-p3.y)*(p1.x-p3.x)+(p3.x-p2.x)*(p1.y-p3.y));
+  return vec3(w1, w2, 1.0 - w1 - w2);
+}
+
 vec3 triangle(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 pos, in vec3 col)
 {
-  vec3 tri = sdTriangle(p1, p2, p3, pos);
+  // vec3 tri = crossProductTriangle(p1, p2, p3, pos);
+  vec3 tri = barycentric(p1, p2, p3, pos);
   float d = min(tri.x, min(tri.y, tri.z));
 
   // copy google colorpicker's rgb in format "r, g, b" and run this
@@ -39,11 +47,8 @@ vec3 triangle(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 pos, in vec3 col)
   vec3 col2 = vec3(0.01, 0.99, 0.45);
   vec3 col3 = vec3(0.72, 0.00, 1.00);
 
-  vec3 inside = col1 * (1. - tri.x) + col2 * (1. - tri.y) + col3 * (1. - tri.z);
+  vec3 inside = col1 * tri.x + col2 * tri.y + col3 * tri.z;
   col = d > 0. ? inside : col;
-
-  /* if (d > 0.) col = smoothstep(col, col2, vec3(tri.z)); */
-  // col = smoothstep(col, col3, d * vec4(tri.z));
 
   return col;
 }
@@ -56,11 +61,12 @@ float unitCos(float f) {
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
   vec2 uv;
-
   uv = 2.1 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y;
 
+  float time = iTime * 1.5;
+
   if (iMouse.z > 0.) {
-    float scale = unitCos(iTime / 2.5) * 2.5 + 1.;
+    float scale = unitCos(time / 3.) * 2.5 + 1.; // 3 is wave speed, 2.5 is wave height
     uv = fract(scale * uv) * 2. + vec2(-1); // loop coordinates for many triangles
   };
 
@@ -68,11 +74,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
   float rd = 3.141 * 2.;
   vec2 v = vec2(0, rd / 4.0);
-  vec2 p1 = cos(v + rd * (iTime + 0.) / 3.0);
-  vec2 p2 = cos(v + rd * (iTime + 1.) / 3.0);
-  vec2 p3 = cos(v + rd * (iTime + 2.) / 3.0);
+  vec2 p1 = cos(v + rd * (time + 0.) / 3.0);
+  vec2 p2 = cos(v + rd * (time + 1.) / 3.0);
+  vec2 p3 = cos(v + rd * (time + 2.) / 3.0);
 
-  col = triangle(p1, p2, p3, uv, col);
+  col = triangle(p1, p2, p3, uv, col); // + vec3(dot(uv, uv)) / 10.;
 
   fragColor = vec4(col, 0.);
 }
