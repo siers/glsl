@@ -9,8 +9,6 @@ vec4      iMouse;                // mouse pixel coords. xy: current (if MLB down
 vec4      iDate;                 // (year, month, day, time in seconds)
 float     iSampleRate;           // sound sample rate (i.e., 44100)
 
-// vim: commentstring=//%s
-
 float radian = 3.14159 * 2.;
 
 // https://codeplea.com/triangular-interpolation
@@ -56,14 +54,17 @@ mat4 rotationMatrix(vec3 axis, float angle) {
   );
 }
 
-// move point in 3d space, return new screen coordinates
-vec3 transform(float angle, int triIdx) {
-  float tTime = iTime * 0.2;
+// place triIdx'th triangle vertex (side length = 1) at z = 'radius' and rotate it
+vec3 transform(float yangle, float zangle, int triIdx) {
+  float tTime = iTime * 0.0;
   vec3 triVert = vec3(cos(vec2(0, radian / 4.0) + radian * (tTime + float(triIdx)) / 3.0), 0.);
 
-  float radius = 2.;
-  mat4 m = rotationMatrix(vec3(0., 1., 0.), angle);
-  vec3 w = (m * vec4(triVert.xy, radius, 0.)).xyz + vec3(0, 0, (-radius - 1.));
+  float radius = 5.;
+  mat4 m = rotationMatrix(vec3(0., 1., 0.), yangle);
+  mat4 m2 = rotationMatrix(vec3(0., 0., 1.), zangle);
+  vec4 rot = m2 * (m * vec4(triVert.xy, radius, 0.));
+  vec3 w = rot.xyz + vec3(0, 0, (-radius * 1.5));
+
   mat3 proj = mat3(vec3(1. / w.z, 0, 0), vec3(0, 1. / w.z, 0), vec3(0, 0, 1));
   return proj * w;
 }
@@ -73,12 +74,16 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   vec2 uv;
   uv = 2.1 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y;
 
-  int triCount = 10;
-  vec3[3 * 10] tris;
+  int subCount = 5;
+  int triCount = subCount * subCount;
+  vec3[3 * 25] tris; // second number must equal triCount
 
   for (int i = 0; i < triCount; i++) {
-    float rotOffset = 2. * 3.14159 * (iTime * 0.01 + float(i) * 0.3);
-    for (int j = 0; j < 3; j++) tris[i * 3 + j] = transform(rotOffset, j);
+    float t = iTime * 0.1;
+    float subring = float(i / subCount) / float(subCount);
+    float ring = float(i % subCount) / float(subCount) + subring / float(subCount);
+    float yangle = radian * (t + ring), zangle = radian * (t + subring);
+      for (int j = 0; j < 3; j++) tris[i * 3 + j] = transform(yangle, zangle, j);
   }
 
   // find top triangle
