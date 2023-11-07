@@ -11,6 +11,8 @@ float     iSampleRate;           // sound sample rate (i.e., 44100)
 
 // vim: commentstring=//%s
 
+float radian = 3.14159 * 2.;
+
 // https://codeplea.com/triangular-interpolation
 vec3 barycentric(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 p) {
   float w1 = ((p2.y-p3.y)*(p.x-p3.x)+(p3.x-p2.x)*(p.y-p3.y)) / ((p2.y-p3.y)*(p1.x-p3.x)+(p3.x-p2.x)*(p1.y-p3.y));
@@ -29,19 +31,14 @@ float barycentric3(in vec3 p1, in vec3 p2, in vec3 p3, in vec2 p) {
 
 vec3 triangle(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 pos, in vec3 bg)
 {
-  vec3 tri = barycentric(p1, p2, p3, pos);
-  float d = min(tri.x, min(tri.y, tri.z));
-
   // copy google colorpicker's rgb in format "r, g, b" and run this
   // ruby -e "puts('  vec3 col = vec3(%s);' % eval('[%s]' % %x{xclip -o}).map{|x| '%0.2f' % (x/255.0) }.join(', '))"
   vec3 col1 = vec3(0.88, 0.75, 0.96);
   vec3 col2 = vec3(0.86, 0.80, 0.54);
   vec3 col3 = vec3(0.88, 0.60, 0.38);
 
-  vec3 inside = col1 * tri.x + col2 * tri.y + col3 * tri.z;
-  bg = d > 0. ? inside : bg; // bg reused for "just a color"
-
-  return bg;
+  vec3 tri = barycentric(p1, p2, p3, pos);
+  return min(tri.x, min(tri.y, tri.z)) > 0. ? col1 * tri.x + col2 * tri.y + col3 * tri.z : bg;
 }
 
 // https://gist.github.com/yiwenl/3f804e80d0930e34a0b33359259b556c
@@ -60,10 +57,13 @@ mat4 rotationMatrix(vec3 axis, float angle) {
 }
 
 // move point in 3d space, return new screen coordinates
-vec3 transform(float angle, vec3 v) {
+vec3 transform(float angle, int triIdx) {
+  float tTime = iTime * 0.2;
+  vec3 triVert = vec3(cos(vec2(0, radian / 4.0) + radian * (tTime + float(triIdx)) / 3.0), 0.);
+
   float radius = 2.;
   mat4 m = rotationMatrix(vec3(0., 1., 0.), angle);
-  vec3 w = (m * vec4(v.xy, radius, 0.)).xyz + vec3(0, 0, (-radius - 1.));
+  vec3 w = (m * vec4(triVert.xy, radius, 0.)).xyz + vec3(0, 0, (-radius - 1.));
   mat3 proj = mat3(vec3(1. / w.z, 0, 0), vec3(0, 1. / w.z, 0), vec3(0, 0, 1));
   return proj * w;
 }
@@ -75,15 +75,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
   int triCount = 10;
   vec3[3 * 10] tris;
-  float rd = 3.141 * 2.;
 
   for (int i = 0; i < triCount; i++) {
-    float tTime = iTime * 0.2;
     float rotOffset = 2. * 3.14159 * (iTime * 0.01 + float(i) * 0.3);
-    vec2 v = vec2(0, rd / 4.0);
-    tris[i * 3]     = transform(rotOffset, vec3(cos(v + rd * (tTime + 0.) / 3.0), 0.));
-    tris[i * 3 + 1] = transform(rotOffset, vec3(cos(v + rd * (tTime + 1.) / 3.0), 0.));
-    tris[i * 3 + 2] = transform(rotOffset, vec3(cos(v + rd * (tTime + 2.) / 3.0), 0.));
+    for (int j = 0; j < 3; j++) tris[i * 3 + j] = transform(rotOffset, j);
   }
 
   // find top triangle
@@ -95,8 +90,5 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   }
 
   // find color of uv inside the triangle at tris[i]
-  fragColor = vec4(
-    triangle(tris[i * 3].xy, tris[i * 3 + 1].xy, tris[i * 3 + 2].xy, uv, vec3(0, 0, 0)),
-    0.
-  );
+  fragColor = vec4(triangle(tris[i*3].xy, tris[i*3+1].xy, tris[i*3+2].xy, uv, vec3(0, 0, 0)), 0.);
 }
