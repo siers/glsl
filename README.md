@@ -1,6 +1,6 @@
 ## ShaderToys
 
-`triangle`: https://www.shadertoy.com/view/DtcyDr
+`triangle.frag.glsl`: https://www.shadertoy.com/view/DtcyDr
 
 `sphere.frag.glsl`: https://www.shadertoy.com/view/DltcW8
 
