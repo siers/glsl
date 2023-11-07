@@ -9,39 +9,9 @@ vec4      iMouse;                // mouse pixel coords. xy: current (if MLB down
 vec4      iDate;                 // (year, month, day, time in seconds)
 float     iSampleRate;           // sound sample rate (i.e., 44100)
 
-// vim: ft=c commentstring=//%s
+// vim: commentstring=//%s
 
-// point inside triangle test
-// for triangle a, b, c and point p
-
-// 1. https://www.youtube.com/watch?app=desktop&v=HYAgJN3x4GA
-// tl;dr; convert point from standard basis to basis (c - a, b - a)
-// then check that the vector is positive and their sum is not more than 1
-// video say's it's supposedly very computationally effective
-
-// 2. https://nerdparadise.com/math/pointinatriangle
-// define cross product of (sa - p, sa - sb) for each consecutive triangle points
-// * cross(a, b) gives you the normal vector of their plane proportional to the area they make when summed
-// * if it's negative, then area was negative, which is why cross product has handedness, which we exploit
-// then check that all cross products are positive, so they're on the same side of all sides
-
-// 3. https://codeplea.com/triangular-interpolation
-// superficially similar to formula in 1., but arrived from solving a linear system
-
-// clamp(gamma(cross.z))
-float f(vec2 a, vec2 b) {
-  float area = cross(vec3(a, 0.), vec3(b, 0.)).z;
-  float gamma = area; // pow(area, 2.2);
-  return clamp(gamma, 0., 1.);
-}
-
-vec3 crossProductTriangle(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 p) {
-  vec2 e1 = p2 - p1;  vec2 e2 = p3 - p2;  vec2 e3 = p1 - p3;
-  vec2 v1 = p - p1;   vec2 v2 = p - p2;   vec2 v3 = p - p3;
-
-  return vec3(f(v1, e1), f(v2, e2), f(v3, e3));
-}
-
+// https://codeplea.com/triangular-interpolation
 vec3 barycentric(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 p) {
   float w1 = ((p2.y-p3.y)*(p.x-p3.x)+(p3.x-p2.x)*(p.y-p3.y)) / ((p2.y-p3.y)*(p1.x-p3.x)+(p3.x-p2.x)*(p1.y-p3.y));
   float w2 = ((p3.y-p1.y)*(p.x-p3.x)+(p1.x-p3.x)*(p.y-p3.y)) / ((p2.y-p3.y)*(p1.x-p3.x)+(p3.x-p2.x)*(p1.y-p3.y));
@@ -59,7 +29,6 @@ vec3 barycentric3(in vec3 p1, in vec3 p2, in vec3 p3, in vec2 p) {
 
 vec3 triangle(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 pos, in vec3 bg)
 {
-  // vec3 tri = crossProductTriangle(p1, p2, p3, pos);
   vec3 tri = barycentric(p1, p2, p3, pos);
   float d = min(tri.x, min(tri.y, tri.z));
 
