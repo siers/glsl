@@ -40,10 +40,7 @@ vec3 barycentric(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 p) {
 vec3 barycentric3(in vec3 p1, in vec3 p2, in vec3 p3, in vec2 p) {
   float w1 = ((p2.y-p3.y)*(p.x-p3.x)+(p3.x-p2.x)*(p.y-p3.y)) / ((p2.y-p3.y)*(p1.x-p3.x)+(p3.x-p2.x)*(p1.y-p3.y));
   float w2 = ((p3.y-p1.y)*(p.x-p3.x)+(p1.x-p3.x)*(p.y-p3.y)) / ((p2.y-p3.y)*(p1.x-p3.x)+(p3.x-p2.x)*(p1.y-p3.y));
-  if (min(w1, min(w2, 1. - w1 - w2)) > 0.)
-    return vec3(p, p1.z * w1 + p2.z * w2 + p3 * (1.0 - w1 - w2));
-  else
-    return vec3(-999);
+  return vec3(p, p1.z * w1 + p2.z * w2 + p3 * (1.0 - w1 - w2));
 }
 
 vec3 triangle(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 pos, in vec3 bg)
@@ -83,9 +80,9 @@ mat4 rotationMatrix(vec3 axis, float angle) {
 }
 
 // move point in 3d space, return new screen coordinates
-vec3 transform(float rotoff, vec3 p2) {
+vec3 transform(vec3 p2) {
   vec4 p = vec4(p2, 0.);
-  mat4 m = rotationMatrix(vec3(0., 1., 0.), 2. * 3.14159 * (iTime * 0.2 + rotoff));
+  mat4 m = rotationMatrix(vec3(0., 1., 0.), iTime);
   return (m * p).xyz;
 }
 
@@ -103,16 +100,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
   float rd = 3.141 * 2.;
 
-  int triCount = 10;
-  vec3[3 * 10] tris;
+  int triCount = 4;
+  vec3[3 * 4] tris;
 
   for (int i = 0; i < triCount; i++) {
-    float tTime = iTime * 0.2;
-    float rotOffset = float(i) * 5.4;
+    float tTime = iTime + float(i);
     vec2 v = vec2(0, rd / 4.0);
-    vec3 p1 = transform(rotOffset, vec3(cos(v + rd * (tTime + 0.) / 3.0), 0.) + vec3(0, 0, 1));
-    vec3 p2 = transform(rotOffset, vec3(cos(v + rd * (tTime + 1.) / 3.0), 0.) + vec3(0, 0, 1));
-    vec3 p3 = transform(rotOffset, vec3(cos(v + rd * (tTime + 2.) / 3.0), 0.) + vec3(0, 0, 1));
+    vec3 p1 = transform(vec3(cos(v + rd * (tTime + 0.) / 3.0), 0.) + vec3(0, 0, 1));
+    vec3 p2 = transform(vec3(cos(v + rd * (tTime + 1.) / 3.0), 0.) + vec3(0, 0, 1));
+    vec3 p3 = transform(vec3(cos(v + rd * (tTime + 2.) / 3.0), 0.) + vec3(0, 0, 1));
     tris[i * 3] = p1;
     tris[i * 3 + 1] = p2;
     tris[i * 3 + 2] = p3;
@@ -123,10 +119,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   for (int j = 0; j < triCount; j++) {
     vec3 prevZ = barycentric3(tris[i*3], tris[i*3+1], tris[i*3+2], uv);
     vec3 currentZ = barycentric3(tris[j*3], tris[j*3+1], tris[j*3+2], uv);
-    if (i == -1 || (currentZ != vec3(-999) && prevZ.z < currentZ.z)) i = j;
+    if (i == -1 || prevZ.z < currentZ.z) i = j;
   }
-  col = triangle(tris[i * 3].xy, tris[i * 3 + 1].xy, tris[i * 3 + 2].xy, uv, col);
-  if (i == -1) col = vec3(0.3); // inform us that "the shit" has gone down
+  col += triangle(tris[i * 3].xy, tris[i * 3 + 1].xy, tris[i * 3 + 2].xy, uv, col);
+  if (i == -1) col = vec3(0.3);
 
   fragColor = vec4(col, 0.);
 }
