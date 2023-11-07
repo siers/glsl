@@ -12,22 +12,21 @@ float     iSampleRate;           // sound sample rate (i.e., 44100)
 float radian = 3.14159 * 2.;
 
 // https://codeplea.com/triangular-interpolation
-vec3 barycentric(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 p) {
+vec3 barycentric(in vec3 p1, in vec3 p2, in vec3 p3, in vec2 p) {
   float w1 = ((p2.y-p3.y)*(p.x-p3.x)+(p3.x-p2.x)*(p.y-p3.y)) / ((p2.y-p3.y)*(p1.x-p3.x)+(p3.x-p2.x)*(p1.y-p3.y));
   float w2 = ((p3.y-p1.y)*(p.x-p3.x)+(p1.x-p3.x)*(p.y-p3.y)) / ((p2.y-p3.y)*(p1.x-p3.x)+(p3.x-p2.x)*(p1.y-p3.y));
   return vec3(w1, w2, 1.0 - w1 - w2);
 }
 
-float barycentric3(in vec3 p1, in vec3 p2, in vec3 p3, in vec2 p) {
-  float w1 = ((p2.y-p3.y)*(p.x-p3.x)+(p3.x-p2.x)*(p.y-p3.y)) / ((p2.y-p3.y)*(p1.x-p3.x)+(p3.x-p2.x)*(p1.y-p3.y));
-  float w2 = ((p3.y-p1.y)*(p.x-p3.x)+(p1.x-p3.x)*(p.y-p3.y)) / ((p2.y-p3.y)*(p1.x-p3.x)+(p3.x-p2.x)*(p1.y-p3.y));
-  if (min(w1, min(w2, 1. - w1 - w2)) > 0.)
-    return p1.z * w1 + p2.z * w2 + p3.z * (1.0 - w1 - w2);
+float barycentricZ(in vec3 p1, in vec3 p2, in vec3 p3, in vec2 p) {
+  vec3 b = barycentric(p1, p2, p3, p);
+  if (min(b.x, min(b.y, b.z)) > 0.)
+    return dot(vec3(p1.z, p2.z, p3.z), b);
   else
     return -999.0;
 }
 
-vec3 triangle(in vec2 p1, in vec2 p2, in vec2 p3, in vec2 pos, in vec3 bg)
+vec3 triangle(in vec3 p1, in vec3 p2, in vec3 p3, in vec2 pos, in vec3 bg)
 {
   // copy google colorpicker's rgb in format "r, g, b" and run this
   // ruby -e "puts('  vec3 col = vec3(%s);' % eval('[%s]' % %x{xclip -o}).map{|x| '%0.2f' % (x/255.0) }.join(', '))"
@@ -89,11 +88,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   // find top triangle
   int i = -1;
   for (int j = 0; j < triCount; j++) {
-    float prev = barycentric3(tris[i*3], tris[i*3+1], tris[i*3+2], uv);
-    float curr = barycentric3(tris[j*3], tris[j*3+1], tris[j*3+2], uv);
+    float prev = barycentricZ(tris[i*3], tris[i*3+1], tris[i*3+2], uv);
+    float curr = barycentricZ(tris[j*3], tris[j*3+1], tris[j*3+2], uv);
     if ((curr != -999. && prev < curr)) i = j;
   }
 
   // find color of uv inside the triangle at tris[i]
-  fragColor = vec4(triangle(tris[i*3].xy, tris[i*3+1].xy, tris[i*3+2].xy, uv, vec3(0, 0, 0)), 0.);
+  fragColor = vec4(triangle(tris[i*3], tris[i*3+1], tris[i*3+2], uv, vec3(0, 0, 0)), 0.);
 }
