@@ -1,0 +1,9 @@
+#!/usr/bin/env zsh
+
+set -eux
+
+ls "$1"
+f="$(sed 's/\.hs$//' <<< "$1")"
+shift
+
+runhaskell "$f.hs" > >(sort -u > "$f.data") 2> >(sort -u > "$f.data.2") && gnuplot "$f.plot"

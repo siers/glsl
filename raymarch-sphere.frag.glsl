@@ -14,61 +14,44 @@ vec4      iDate;                 // (year, month, day, time in seconds)
 float     iSampleRate;           // sound sample rate (i.e., 44100)
 
 float sdSphere(vec3 p, vec3 offset, float radius) {
-  return length(p - offset) - radius;
+  return length(offset - p) - radius;
 }
 
-float sdSphereAngle(vec3 p, vec3 offset, float radius) {
-  return dot(normalize(p), normalize(offset - p));
-}
-
-float sdSphereLight(vec3 p, vec3 offset, float radius, vec3 light) {
-  // p - offset is sphere's normal
-  return max(0., dot(normalize(p - offset), normalize(light - p)));
+float sdSphereAngle(vec3 p, vec3 offset, vec3 light, float radius) {
+  float angle = dot(normalize(light), normalize(offset - p));
+  return angle;
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
-  vec3 uv;
-  uv = normalize(vec3(2.0 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y, 1.0));
+  vec3 uv = normalize(vec3(2.0 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y, 1.2));
+  vec3 light = vec3(3);
 
-  float tc = (cos(iTime * 1.7) + 1.) / 2.;
-  float rad = 3.14145926535 * 2.;
+  float t;
+  t = iTime * 1.5;
+  vec3 center1 = vec3(0, 0, 3.) + vec3(cos(t)*2., sin(t*2.), 0);
+  t = (iTime + 0.5) * 1.5;
+  vec3 center2 = vec3(0, 0, 3.) + vec3(0, cos(t)*2., sin(t*2.));
 
-  float r = 0.05;
-  vec3 off1 = vec3(0, 0, 5);
-  /* vec3 off1 = vec3(2.2, 1. + -tc * 2., 5.); */
-  vec3 off2 = vec3(-2.2, -1. + tc * 2., 5.);
-  float a, b;
+  float r = 0.4;
+  float a = 100., b = 100., esc = 10.;
+  vec3 uva = uv, uvb = uv;
 
-  for (int i = 0; i < 1000; i++) {
-    a = sdSphere(uv, off1, r);
-    uv *= 0.99 * a;
-    /* b = sdSphere(uv, off2, r); */
-    /* uv *= 0.5 * min(a, b); */
+  for (int i = 0; i < 100; i++) {
+    a = sdSphere(uva, center1, r); uva += normalize(uva) * a * 0.5;
+    b = sdSphere(uvb, center2, r); uvb += normalize(uvb) * b * 0.5;
 
-    float t = 0.2;
-    if (a < t || b < t) break;
+    if (min(a, b) > esc) break;
   }
 
-  float lightT = iTime * 4.;
-  vec3 light = off1 + (vec3(cos(lightT), 0, cos(rad / 4. + lightT)) * 3.);
-  /* vec3 light = normalize(vec3(0.5, 0.5, -2)); */
   vec4 red = vec4(0.92, 0.33, 0.20, 0);
-  vec4 orange = vec4(1.00, 0.85, 0.79, 0);
   vec4 white = vec4(1);
 
-  if (a < 0.) {
-  /* if (a < 3. || b < 3.) { // no idea what this 3. represents */
-    /* uv = cross(normalize(uv), light); */
-    /* fragColor = mix(red, white, pow(max(sdSphereAngle(uv, off1, r),sdSphereAngle(uv, off2, r)), 1.)); */
+  bool first = uvb.z > uva.z;
+  float n     = first ? a : b;
+  uv          = first ? uva : uvb;
+  vec3 center = first ? center1 : center2;
 
-    /* float angle = max(sdSphereAngle(uv, off1, r),sdSphereAngle(uv, off2, r)); */
-    /* float angle = sdSphereLight(uv, off1, r, light); */
-    float angle = sdSphereLight(uv, off1, r, light);
-    /* float angle = max(sdSphereLight(uv, off1, r, light), sdSphereLight(uv, off2, r, light)); */
-
-    fragColor = mix(red, white, angle);
-    /* fragColor = mix(red, white, pow(angle, 1.)); */
-  } else
-    fragColor = vec4(1.00, 0.90, 1.00, 0);
+  float angle = sdSphereAngle(uv, center, light, r);
+  fragColor = n > esc ? vec4(0) : mix(red, white, angle);
 }
