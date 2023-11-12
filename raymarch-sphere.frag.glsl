@@ -1,3 +1,7 @@
+#version 300
+
+precision mediump float;
+
 vec3      iResolution;           // viewport resolution (in pixels)
 float     iTime;                 // shader playback time (in seconds)
 float     iTimeDelta;            // render time (in seconds)
@@ -28,34 +32,40 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   uv = normalize(vec3(2.0 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y, 1.0));
 
   float tc = (cos(iTime * 1.7) + 1.) / 2.;
+  float rad = 3.14145926535 * 2.;
 
-  float r = 0.25;
-  vec3 off1 = vec3(2.2, 1. + -tc * 2., 5.);
+  float r = 0.05;
+  vec3 off1 = vec3(0, 0, 5);
+  /* vec3 off1 = vec3(2.2, 1. + -tc * 2., 5.); */
   vec3 off2 = vec3(-2.2, -1. + tc * 2., 5.);
   float a, b;
 
   for (int i = 0; i < 1000; i++) {
     a = sdSphere(uv, off1, r);
-    b = sdSphere(uv, off2, r);
-    uv *= 0.5 * min(a, b);
+    uv *= 0.99 * a;
+    /* b = sdSphere(uv, off2, r); */
+    /* uv *= 0.5 * min(a, b); */
 
     float t = 0.2;
     if (a < t || b < t) break;
   }
 
-  vec3 light = normalize(vec3(0, 2, 0));
+  float lightT = iTime * 4.;
+  vec3 light = off1 + (vec3(cos(lightT), 0, cos(rad / 4. + lightT)) * 3.);
   /* vec3 light = normalize(vec3(0.5, 0.5, -2)); */
   vec4 red = vec4(0.92, 0.33, 0.20, 0);
   vec4 orange = vec4(1.00, 0.85, 0.79, 0);
   vec4 white = vec4(1);
 
-  if (a < 3. || b < 3.) { // no idea what this 3. represents
+  if (a < 0.) {
+  /* if (a < 3. || b < 3.) { // no idea what this 3. represents */
     /* uv = cross(normalize(uv), light); */
     /* fragColor = mix(red, white, pow(max(sdSphereAngle(uv, off1, r),sdSphereAngle(uv, off2, r)), 1.)); */
 
     /* float angle = max(sdSphereAngle(uv, off1, r),sdSphereAngle(uv, off2, r)); */
     /* float angle = sdSphereLight(uv, off1, r, light); */
-    float angle = max(sdSphereLight(uv, off1, r, light), sdSphereLight(uv, off2, r, light));
+    float angle = sdSphereLight(uv, off1, r, light);
+    /* float angle = max(sdSphereLight(uv, off1, r, light), sdSphereLight(uv, off2, r, light)); */
 
     fragColor = mix(red, white, angle);
     /* fragColor = mix(red, white, pow(angle, 1.)); */
