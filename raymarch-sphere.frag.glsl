@@ -33,13 +33,12 @@ vec3 sphereShift(int i, float n) {
 }
 
 float sdf(vec3 uv) {
-  float sdf = 1000., p, n = 5., c = 1.5, t, r = 0.5;
-  vec3 center, centerprev;
+  float sdf = 1000., n = 5., r = 0.4;
 
   for (int i; float(i) < n; i++) {
     vec3 center = vec3(0, 0, 5.) + sphereShift(i, n);
     vec3 center_ = vec3(0, 0, 5.) + sphereShift(i - 1, n);
-    sdf = opSmoothUnion(sdf, sdSphere(uv, center, 0.4), (length(center - center_) - r + 0.2));
+    sdf = opSmoothUnion(sdf, sdSphere(uv, center, r), (length(center - center_) - r + 0.1));
   }
 
   return sdf;
@@ -63,17 +62,17 @@ vec4 checkerboard(vec3 uv1) {
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
   vec3 uv = normalize(vec3(2.0 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y, 3.));
-  vec3 light = vec3(0, 0, 3.5) + vec3(cos(iTime), sin(iTime), 0);
+  vec3 light = vec3(0, 0, 3.5) + vec3(cos(iTime * 5.), sin(iTime * 5.), 0) * 2.;
 
-  float i, d = 100., b = 100., esc = 10.;
+  float i, d, most = 50., esc = 10.;
 
-  for (i = 0.; i < 100. && (d = sdf(uv)) <= esc; i++) {
-    uv += normalize(uv) * d * 0.5;
+  for (i = 0.; i < most && (d = sdf(uv)) <= esc; i++) {
+    uv += normalize(uv) * d;
   }
 
   vec4 red = vec4(0.92, 0.13, 0.07, 0);
-  vec4 white = vec4(1);
+  vec4 white = vec4(250, 222, 255, 0) / 255.;
   vec4 background = checkerboard(uv);
 
-  fragColor = i < 100. ? background : mix(red, (red + white * 5.) / 6., sdfLight(uv, light, 0.01));
+  fragColor = i < most ? background : mix(red, white, sdfLight(uv, light, 0.01));
 }
