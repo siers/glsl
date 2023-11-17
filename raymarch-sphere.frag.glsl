@@ -13,18 +13,24 @@ vec4      iMouse;                // mouse pixel coords. xy: current (if MLB down
 vec4      iDate;                 // (year, month, day, time in seconds)
 float     iSampleRate;           // sound sample rate (i.e., 44100)
 
+float radian = 2. * 3.14159265;
+
 float sdSphere(vec3 p, vec3 offset, float radius) {
   return length(offset - p) - radius;
 }
 
 float sdf(vec3 uv) {
-  float t, c = 1.5, r = 0.4;
-  t = iTime * c;
-  vec3 center1 = vec3(0, 0, 5.) + vec3(cos(t)*2., sin(t*2.), 0);
-  t = (iTime + (.8/c)) * c;
-  vec3 center2 = vec3(0, 0, 5.) + vec3(cos(t)*2., sin(t*2.), 0);
+  float sdf = 1000., p, n = 4., c = 1.5, t, d;
 
-  return min(sdSphere(uv, center1, r), sdSphere(uv, center2, r));
+  for (int i; float(i) < n; i++) {
+    p = float(i) / n;
+    d = p * 0.15; // * 1.0 to make them equidistant
+    t = (iTime / 4. + d * c) / c * radian;
+    vec3 center = vec3(0, 0, 5.) + vec3(cos(t) * 2., sin(t * 2.), 0);
+    sdf = min(sdf, sdSphere(uv, center, 0.4));
+  }
+
+  return sdf;//min(sdSphere(uv, center1, r), sdSphere(uv, center2, r));
 }
 
 float sdfLight(vec3 uv, vec3 light) {
@@ -54,5 +60,5 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   vec4 white = vec4(1);
   vec4 background = vec4(251, 219, 255, 0) / 255.0 / 3. * 0.;
 
-  fragColor = d > esc ? background : mix(red, (red + white) / 2., sdfLight(uv, light));
+  fragColor = d > esc ? background : mix(red, (red + white * 2.) / 3., sdfLight(uv, light));
 }
