@@ -54,23 +54,26 @@ float sdfLight(vec3 uv, vec3 light, float eps) {
   return clamp(dot(normalize(light - uv), normalize(normal)), 0., 1.);
 }
 
+vec4 checkerboard(vec3 uv1) {
+  vec2 uv = fract(normalize(uv1).xy * 4.) * 2.;
+  int bit = (int(uv.x) + int(uv.y)) % 2;
+  return mix(vec4(0.2), vec4(0.3), float(bit));
+}
+
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
   vec3 uv = normalize(vec3(2.0 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y, 3.));
   vec3 light = vec3(0, 0, 3.5) + vec3(cos(iTime), sin(iTime), 0);
 
-  float d = 100., b = 100., esc = 10.;
+  float i, d = 100., b = 100., esc = 10.;
 
-  for (int i = 0; i < 100; i++) {
-    d = sdf(uv);
+  for (i = 0.; i < 100. && (d = sdf(uv)) <= esc; i++) {
     uv += normalize(uv) * d * 0.5;
-
-    if (d > esc) break;
   }
 
   vec4 red = vec4(0.92, 0.13, 0.07, 0);
   vec4 white = vec4(1);
-  vec4 background = vec4(251, 219, 255, 0) / 255.0 / 3. * 0.;
+  vec4 background = checkerboard(uv);
 
-  fragColor = d > esc ? background : mix(red, (red + white * 5.) / 6., sdfLight(uv, light, 0.01));
+  fragColor = i < 100. ? background : mix(red, (red + white * 5.) / 6., sdfLight(uv, light, 0.01));
 }
