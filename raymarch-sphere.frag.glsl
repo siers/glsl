@@ -17,20 +17,19 @@ float sdSphere(vec3 p, vec3 offset, float radius) {
   return length(offset - p) - radius;
 }
 
-float sdSphereAngle(vec3 p, vec3 offset, vec3 light, float radius) {
-  float angle = dot(normalize(light), normalize(offset - p));
-  return angle;
+float sdSphereAngle(vec3 p, vec3 center, vec3 light, float radius) {
+  return clamp(dot(normalize(light - p), normalize(p - center)), 0., 1.);
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
   vec3 uv = normalize(vec3(2.0 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y, 3.));
-  vec3 light = vec3(3);
+  vec3 light = vec3(0, 0, 4.5);
 
-  float t;
-  t = iTime * 1.5;
+  float t, c = 1.5;
+  t = iTime * c;
   vec3 center1 = vec3(0, 0, 5.) + vec3(cos(t)*2., sin(t*2.), 0);
-  t = (iTime + 0.5) * 1.5;
+  t = (iTime + (.8/c)) * c;
   vec3 center2 = vec3(0, 0, 5.) + vec3(cos(t)*2., sin(t*2.), 0);
 
   float r = 0.4;
@@ -44,7 +43,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     if (min(a, b) > esc) break;
   }
 
-  vec4 red = vec4(0.92, 0.33, 0.20, 0);
+  vec4 red = vec4(0.92, 0.13, 0.07, 0);
   vec4 white = vec4(1);
 
   bool first = uvb.z > uva.z;
