@@ -24,14 +24,14 @@ float sdSphereAngle(vec3 p, vec3 offset, vec3 light, float radius) {
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
-  vec3 uv = normalize(vec3(2.0 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y, 1.2));
+  vec3 uv = normalize(vec3(2.0 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y, 3.));
   vec3 light = vec3(3);
 
   float t;
   t = iTime * 1.5;
-  vec3 center1 = vec3(0, 0, 3.) + vec3(cos(t)*2., sin(t*2.), 0);
+  vec3 center1 = vec3(0, 0, 5.) + vec3(cos(t)*2., sin(t*2.), 0);
   t = (iTime + 0.5) * 1.5;
-  vec3 center2 = vec3(0, 0, 3.) + vec3(0, cos(t)*2., sin(t*2.));
+  vec3 center2 = vec3(0, 0, 5.) + vec3(cos(t)*2., sin(t*2.), 0);
 
   float r = 0.4;
   float a = 100., b = 100., esc = 10.;
