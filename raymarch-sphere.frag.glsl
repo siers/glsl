@@ -39,7 +39,7 @@ float sdfLight(vec3 uv, vec3 light) {
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
   vec3 uv = normalize(vec3(2.0 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y, 3.));
-  vec3 light = vec3(0, 0, 4.5);
+  vec3 light = vec3(0, 0, 3.5);
 
   float d = 100., b = 100., esc = 10.;
 
@@ -52,6 +52,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
   vec4 red = vec4(0.92, 0.13, 0.07, 0);
   vec4 white = vec4(1);
+  vec4 background = vec4(251, 219, 255, 0) / 255.0 / 3. * 0.;
 
-  fragColor = d > esc ? vec4(0) : mix(red, white, sdfLight(uv, light));
+  fragColor = d > esc ? background : mix(red, (red + white) / 2., sdfLight(uv, light));
 }
