@@ -67,6 +67,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   vec3 uv = normalize(vec3(2.0 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y, 3.));
   vec3 light = sphereCenter - vec3(0, 0, 0.5) + sphereShift(int(sphereCount) + 2, sphereCount);
 
+  if (iMouse.z > 0.)
+    light = vec3(2.0 * (iMouse.xy - iResolution.xy / 2.) / iResolution.y, 4);
+
   float i, d, most = 50., esc = 10.;
 
   for (i = 0.; i < most && (d = sdf(uv)) <= esc; i++) {
