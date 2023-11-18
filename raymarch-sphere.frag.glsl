@@ -25,6 +25,9 @@ float sdSphere(vec3 p, vec3 offset, float radius) {
   return length(offset - p) - radius;
 }
 
+vec3 sphereCenter = vec3(0, 0, 5);
+float sphereCount = 5.;
+
 vec3 sphereShift(int i, float n) {
   float p = float(i) / n, c = 1.5;
   float d = p * (n * 0.05); // * 1.0 to make them equidistant
@@ -36,8 +39,8 @@ float sdf(vec3 uv) {
   float sdf = 1000., n = 5., r = 0.4;
 
   for (int i; float(i) < n; i++) {
-    vec3 center = vec3(0, 0, 5.) + sphereShift(i, n);
-    vec3 center_ = vec3(0, 0, 5.) + sphereShift(i - 1, n);
+    vec3 center = sphereCenter + sphereShift(i, n);
+    vec3 center_ = sphereCenter + sphereShift(i - 1, n);
     sdf = opSmoothUnion(sdf, sdSphere(uv, center, r), (length(center - center_) - r + 0.1));
   }
 
@@ -50,7 +53,7 @@ float sdfDiff(vec3 uv, vec3 diff) {
 
 float sdfLight(vec3 uv, vec3 light, float eps) {
   vec3 normal = vec3(sdfDiff(uv, vec3(eps, 0, 0)), sdfDiff(uv, vec3(0, eps, 0)), sdfDiff(uv, vec3(0, 0, eps)));
-  return clamp(dot(normalize(light - uv), normalize(normal)), 0., 1.);
+  return dot(normalize(light - uv), normalize(normal));
 }
 
 vec4 checkerboard(vec3 uv1) {
@@ -62,7 +65,7 @@ vec4 checkerboard(vec3 uv1) {
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
   vec3 uv = normalize(vec3(2.0 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y, 3.));
-  vec3 light = vec3(0, 0, 3.5) + vec3(cos(iTime * 5.), sin(iTime * 5.), 0) * 2.;
+  vec3 light = sphereCenter - vec3(0, 0, 0.5) + sphereShift(int(sphereCount) + 2, sphereCount);
 
   float i, d, most = 50., esc = 10.;
 
@@ -72,7 +75,11 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
   vec4 red = vec4(0.92, 0.13, 0.07, 0);
   vec4 white = vec4(250, 222, 255, 0) / 255.;
-  vec4 background = checkerboard(uv);
+  vec4 dark = vec4(112, 30, 71, 0) / 255.;
 
-  fragColor = i < most ? background : mix(red, white, sdfLight(uv, light, 0.01));
+  float angle = sdfLight(uv, light, 0.01);
+  vec4 color = angle >= 0. ? mix(red, white, angle) : mix(dark, red, 1. + angle);
+
+  vec4 background = checkerboard(uv);
+  fragColor = i < most ? background : color;
 }
