@@ -4,7 +4,7 @@
 
 `sphere.frag.glsl`: https://www.shadertoy.com/view/DltcW8
 
-`raymarch-sphere.frag.glsl`: https://www.shadertoy.com/view/DlycWw
+`caterpillar.frag.glsl`: https://www.shadertoy.com/view/DlycWw
 
 ## Development
 
