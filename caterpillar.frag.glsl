@@ -53,7 +53,20 @@ float sdfDiff(vec3 uv, vec3 diff) {
 
 float sdfLight(vec3 uv, vec3 light, float eps) {
   vec3 normal = vec3(sdfDiff(uv, vec3(eps, 0, 0)), sdfDiff(uv, vec3(0, eps, 0)), sdfDiff(uv, vec3(0, 0, eps)));
-  return dot(normalize(light - uv), normalize(normal));
+  float angle = dot(normalize(light - uv), normalize(normal));
+  angle = pow((angle + 1.) / 2., 3.) * 2. - 1.;
+  return angle;
+}
+
+vec4 color(vec3 uv, vec3 light) {
+  vec4 red = vec4(0.92, 0.13, 0.07, 0);
+  vec4 white = vec4(250, 222, 255, 0) / 255.;
+  vec4 dark = vec4(112, 30, 71, 0) / 255.;
+
+  float angle = sdfLight(uv, light, 0.01);
+  vec4 color = angle >= 0. ? mix(red, white, angle) : mix(dark, red, 1. + angle);
+
+  return color;
 }
 
 vec4 checkerboard(vec3 uv1) {
@@ -65,24 +78,14 @@ vec4 checkerboard(vec3 uv1) {
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
 {
   vec3 uv = normalize(vec3(2.0 * (fragCoord.xy - iResolution.xy / 2.) / iResolution.y, 3.));
+  vec3 uvNormal = uv;
   vec3 light = sphereCenter - vec3(0, 0, 0.5) + sphereShift(int(sphereCount) + 2, sphereCount);
 
-  if (iMouse.z > 0.)
-    light = vec3(2.0 * (iMouse.xy - iResolution.xy / 2.) / iResolution.y, 4);
+  if (iMouse.z > 0.) light = vec3(2.0 * (iMouse.xy - iResolution.xy / 2.) / iResolution.y, 4);
 
   float i, d, most = 50., esc = 10.;
-
-  for (i = 0.; i < most && (d = sdf(uv)) <= esc; i++) {
-    uv += normalize(uv) * d;
-  }
-
-  vec4 red = vec4(0.92, 0.13, 0.07, 0);
-  vec4 white = vec4(250, 222, 255, 0) / 255.;
-  vec4 dark = vec4(112, 30, 71, 0) / 255.;
-
-  float angle = sdfLight(uv, light, 0.01);
-  vec4 color = angle >= 0. ? mix(red, white, angle) : mix(dark, red, 1. + angle);
+  for (i = 0.; i < most && (d = sdf(uv)) <= esc; i++) uv += uvNormal * d;
 
   vec4 background = checkerboard(uv);
-  fragColor = i < most ? background : color;
+  fragColor = i < most ? background : color(uv, light);
 }
